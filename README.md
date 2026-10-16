@@ -57,23 +57,4 @@ http://localhost:8000/gaa-training-tracker%20(3).html
   - Red: high load
 - Warning banners appear when the schedule suggests excessive fatigue or poor recovery planning.
 
-## Files in this repository
 
-- `gaa-training-tracker (3).html` — the main app
-- `README.md` — project documentation
-
-## Suggested future improvements
-
-- Add export/import for training data
-- Add statistics charts for weekly/monthly load
-- Add user accounts or backend storage
-- Add goal tracking and player performance summaries
-- Improve accessibility and keyboard navigation
-
-## License
-
-This project does not currently include a license file. If you plan to share or distribute it publicly, consider adding an open-source license such as MIT.
-
-## Contact
-
-For questions or improvements, open an issue in the repository or contact the project owner via GitHub.
