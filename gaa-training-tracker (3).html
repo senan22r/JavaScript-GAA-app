@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Whitescross GAA · Training Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #0e0f0c;
+    --surface:  #161710;
+    --card:     #1c1e17;
+    --border:   rgba(255,255,255,0.11);
+    --border-hi:rgba(255,255,255,0.22);
+    --text:     #e8e6dc;
+    --muted:    #9e9c93;
+    --hint:     #5e5d57;
+
+    --green:    #9dd44f;
+    --green-bg: rgba(143,196,74,0.12);
+    --amber:    #e8a820;
+    --amber-bg: rgba(212,149,26,0.12);
+    --red:      #ee6644;
+    --red-bg:   rgba(217,92,58,0.12);
+
+    --gym:        #6aaaf8;
+    --gym-bg:     rgba(91,156,246,0.12);
+    --training:   #b89ffb;
+    --training-bg:rgba(167,139,250,0.12);
+    --match:      #fb8a8a;
+    --match-bg:   rgba(248,113,113,0.12);
+    --recovery:   #4ddba8;
+    --recovery-bg:rgba(52,211,153,0.12);
+
+    --radius: 10px;
+    --font-display: 'Syne', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-display);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* ── Header ── */
+  .header {
+    border-bottom: 1px solid var(--border);
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 10;
+  }
+  .header-title { font-size: 15px; font-weight: 700; letter-spacing: 0.04em; }
+  .header-sub { font-size: 13px; color: var(--muted); font-family: var(--font-mono); margin-top: 2px; }
+  .week-badge {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+  .week-badge.green { background: var(--green-bg); color: var(--green); border: 1px solid rgba(143,196,74,0.2); }
+  .week-badge.amber { background: var(--amber-bg); color: var(--amber); border: 1px solid rgba(212,149,26,0.2); }
+  .week-badge.red   { background: var(--red-bg);   color: var(--red);   border: 1px solid rgba(217,92,58,0.2); }
+
+  /* ── Layout ── */
+  .main { padding: 20px 24px; max-width: 860px; margin: 0 auto; }
+
+  /* ── Week nav ── */
+  .week-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .week-nav button {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 6px;
+    width: 30px; height: 30px;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .week-nav button:hover { border-color: var(--border-hi); color: var(--text); }
+  .week-label {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--muted);
+    flex: 1;
+    text-align: center;
+  }
+
+  /* ── Calendar grid ── */
+  .calendar {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .day-cell {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 6px 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    min-height: 92px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+  }
+  .day-cell:hover { border-color: var(--border-hi); }
+  .day-cell.today { border-color: rgba(255,255,255,0.22); }
+  .day-name { font-family: var(--font-mono); font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  .day-num  { font-size: 14px; font-weight: 500; margin: 2px 0 6px; }
+  .day-sessions { display: flex; flex-direction: column; gap: 3px; width: 100%; }
+  .session-pill {
+    font-size: 10px;
+    font-family: var(--font-mono);
+    padding: 2px 4px;
+    border-radius: 4px;
+    text-align: center;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+  }
+  .session-pill.gym       { background: var(--gym-bg);       color: var(--gym);       border: 1px solid rgba(91,156,246,0.2); }
+  .session-pill.training  { background: var(--training-bg);  color: var(--training);  border: 1px solid rgba(167,139,250,0.2); }
+  .session-pill.match     { background: var(--match-bg);     color: var(--match);     border: 1px solid rgba(248,113,113,0.2); }
+  .session-pill.recovery  { background: var(--recovery-bg);  color: var(--recovery);  border: 1px solid rgba(52,211,153,0.2); }
+
+  .day-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    margin-top: auto;
+    margin-bottom: 2px;
+    flex-shrink: 0;
+  }
+  .day-dot.green { background: var(--green); }
+  .day-dot.amber { background: var(--amber); }
+  .day-dot.red   { background: var(--red); }
+  .day-dot.empty { background: var(--hint); opacity: 0.5; }
+
+  /* ── Warnings ── */
+  .warnings { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+  .warning-banner {
+    border-radius: 8px;
+    padding: 11px 14px;
+    font-size: 13px;
+    font-family: var(--font-mono);
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    animation: fadein 0.3s ease;
+  }
+  .warning-banner.amber { background: var(--amber-bg); color: var(--amber); border: 1px solid rgba(212,149,26,0.35); }
+  .warning-banner.red   { background: var(--red-bg);   color: var(--red);   border: 1px solid rgba(217,92,58,0.35); }
+  .warning-banner .icon { flex-shrink: 0; font-size: 13px; }
+  @keyframes fadein { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── Log form ── */
+  .log-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+  .log-title {
+    font-size: 12px;
+    font-family: var(--font-mono);
+    color: var(--text);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 16px;
+  }
+  .log-row { margin-bottom: 14px; }
+  .log-label { font-size: 12px; color: var(--text); margin-bottom: 7px; font-family: var(--font-mono); }
+
+  .type-pills { display: flex; gap: 7px; flex-wrap: wrap; }
+  .type-pill {
+    font-size: 12px;
+    font-family: var(--font-mono);
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border-hi);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.04em;
+  }
+  .type-pill:hover { border-color: var(--border-hi); color: var(--text); }
+  .type-pill.active.gym       { background: var(--gym-bg);       color: var(--gym);       border-color: rgba(91,156,246,0.4); }
+  .type-pill.active.training  { background: var(--training-bg);  color: var(--training);  border-color: rgba(167,139,250,0.4); }
+  .type-pill.active.match     { background: var(--match-bg);     color: var(--match);     border-color: rgba(248,113,113,0.4); }
+  .type-pill.active.recovery  { background: var(--recovery-bg);  color: var(--recovery);  border-color: rgba(52,211,153,0.4); }
+
+  /* Effort slider */
+  .effort-wrap { display: flex; align-items: center; gap: 12px; }
+  .effort-wrap input[type=range] {
+    flex: 1;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 3px;
+    background: var(--hint);
+    border-radius: 2px;
+    outline: none;
+  }
+  .effort-wrap input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--text);
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+  .effort-wrap input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+  .effort-val {
+    font-family: var(--font-mono);
+    font-size: 20px;
+    font-weight: 500;
+    min-width: 28px;
+    text-align: center;
+    color: var(--text);
+  }
+  .effort-desc { font-size: 12px; color: var(--muted); font-family: var(--font-mono); margin-top: 6px; }
+
+  /* Date picker */
+  input[type=date] {
+    background: var(--surface);
+    border: 1px solid var(--border-hi);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    padding: 7px 10px;
+    outline: none;
+    width: 100%;
+  }
+  input[type=date]:focus { border-color: rgba(255,255,255,0.3); }
+
+  /* Note */
+  textarea {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    padding: 8px 10px;
+    width: 100%;
+    resize: none;
+    height: 60px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  textarea::placeholder { color: var(--hint); }
+  textarea:focus { border-color: var(--border-hi); }
+
+  /* Log button */
+  .log-btn {
+    width: 100%;
+    background: var(--text);
+    color: var(--bg);
+    border: none;
+    border-radius: 8px;
+    padding: 11px;
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    margin-top: 4px;
+    text-transform: uppercase;
+  }
+  .log-btn:hover { opacity: 0.88; }
+  .log-btn:active { transform: scale(0.98); }
+  .log-btn:disabled { opacity: 0.3; cursor: default; }
+
+  /* ── Legend ── */
+  .legend {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .legend-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+
+  /* ── Session list (day detail) ── */
+  .session-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+  .session-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    animation: fadein 0.2s ease;
+  }
+  .session-item-type {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 12px;
+    min-width: 74px;
+    text-align: center;
+    letter-spacing: 0.04em;
+  }
+  .session-item-effort {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+  .session-item-note {
+    font-size: 13px;
+    color: var(--muted);
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .session-item-del {
+    background: none;
+    border: none;
+    color: var(--hint);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 4px;
+    transition: color 0.15s;
+    flex-shrink: 0;
+  }
+  .session-item-del:hover { color: var(--red); }
+  .session-item-edit {
+    background: none;
+    border: none;
+    color: var(--hint);
+    cursor: pointer;
+    font-size: 11px;
+    font-family: var(--font-mono);
+    padding: 2px 6px;
+    transition: color 0.15s;
+    flex-shrink: 0;
+  }
+  .session-item-edit:hover { color: var(--text); }
+  .log-card.editing { border-color: rgba(255,255,255,0.22); }
+  .log-cancel {
+    display: none;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 10px;
+    cursor: pointer;
+    transition: color 0.15s;
+  }
+  .log-cancel:hover { color: var(--text); }
+  .log-card.editing .log-cancel { display: block; }
+  .log-btn.saving { background: var(--amber); color: var(--bg); }
+
+  .section-head {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+  }
+
+  /* ── Toast ── */
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(16px);
+    background: var(--text);
+    color: var(--bg);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 9px 18px;
+    border-radius: 20px;
+    opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none;
+    z-index: 100;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-title">WHITESCROSS GAA</div>
+    <div class="header-sub">training tracker · fullback</div>
+  </div>
+  <div id="week-badge" class="week-badge green">WEEK · 0</div>
+</div>
+
+<div class="main">
+
+  <!-- Week nav -->
+  <div class="week-nav">
+    <button id="prev-week" title="Previous week">&#8592;</button>
+    <div class="week-label" id="week-range-label"></div>
+    <button id="next-week" title="Next week">&#8594;</button>
+  </div>
+
+  <!-- Calendar -->
+  <div class="calendar" id="calendar"></div>
+
+  <!-- Warnings -->
+  <div class="warnings" id="warnings"></div>
+
+  <!-- Recent sessions for selected week -->
+  <div id="session-list-wrap">
+    <div class="section-head">Sessions this week</div>
+    <div class="session-list" id="session-list"></div>
+  </div>
+
+  <!-- Log form -->
+  <div class="log-card">
+    <div class="log-title" id="log-title">Log a session</div>
+
+    <div class="log-row">
+      <div class="log-label">Date</div>
+      <input type="date" id="log-date">
+    </div>
+
+    <div class="log-row">
+      <div class="log-label">Type</div>
+      <div class="type-pills">
+        <button class="type-pill gym"      data-type="gym"       onclick="selectType(this)">Gym</button>
+        <button class="type-pill training" data-type="training"  onclick="selectType(this)">GAA Training</button>
+        <button class="type-pill match"    data-type="match"     onclick="selectType(this)">Match</button>
+        <button class="type-pill recovery" data-type="recovery"  onclick="selectType(this)">Recovery</button>
+      </div>
+    </div>
+
+    <div class="log-row">
+      <div class="log-label">Effort</div>
+      <div class="effort-wrap">
+        <input type="range" id="log-effort" min="1" max="5" value="3" oninput="updateEffort(this.value)">
+        <div class="effort-val" id="effort-val">3</div>
+      </div>
+      <div class="effort-desc" id="effort-desc">Full club training session</div>
+    </div>
+
+    <div class="log-row">
+      <div class="log-label">Note <span style="opacity:0.4">(optional)</span></div>
+      <textarea id="log-note" placeholder="e.g. heavy deadlifts, felt tired…"></textarea>
+    </div>
+
+    <button class="log-btn" id="log-btn" onclick="logSession()">Log session</button>
+    <div class="log-cancel" id="log-cancel" onclick="cancelEdit()">cancel edit</div>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--gym)"></div> Gym</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--training)"></div> GAA training</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--match)"></div> Match</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--recovery)"></div> Recovery</div>
+    <div class="legend-item" style="margin-left:8px"><div class="legend-dot" style="background:var(--green)"></div> Green (load ok)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div> Amber (moderate)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div> Red (high load)</div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── Data ──
+const EFFORT_DESCS = ['','Light drills / mobility','Technical work, moderate pace','Full club training session','Intense gym / hard training','Competitive match intensity'];
+const TYPE_LABELS  = { gym:'Gym', training:'GAA Training', match:'Match', recovery:'Recovery' };
+
+let sessions = JSON.parse(localStorage.getItem('gaa_sessions') || '[]');
+let selectedType = null;
+let weekOffset = 0;
+let editingId = null;
+
+function save() { localStorage.setItem('gaa_sessions', JSON.stringify(sessions)); }
+
+// ── Date helpers ──
+function toISO(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dy = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dy}`;
+}
+
+function localMidnight(y, m, d) {
+  return new Date(y, m, d, 0, 0, 0, 0);
+}
+
+function getWeekStart(offset) {
+  const now = new Date();
+  const daysToMon = (now.getDay() + 6) % 7;
+  return localMidnight(now.getFullYear(), now.getMonth(), now.getDate() - daysToMon + offset * 7);
+}
+
+function getWeekDays(offset) {
+  const mon = getWeekStart(offset);
+  return Array.from({length:7}, (_,i) =>
+    localMidnight(mon.getFullYear(), mon.getMonth(), mon.getDate() + i)
+  );
+}
+
+// ── Load logic ──
+function sessionsOnDate(iso) {
+  return sessions.filter(s => s.date === iso);
+}
+
+function dailyLoad(iso) {
+  const ss = sessionsOnDate(iso);
+  if (!ss.length) return 0;
+  return ss.reduce((sum, s) => sum + (s.type === 'match' ? 5 : s.effort), 0);
+}
+
+function weekLoad(offset) {
+  return getWeekDays(offset).reduce((sum, d) => sum + dailyLoad(toISO(d)), 0);
+}
+
+function dailyStatus(iso) {
+  const load = dailyLoad(iso);
+  if (!sessionsOnDate(iso).length) return 'empty';
+  if (load >= 10) return 'red';
+  if (load >= 6)  return 'amber';
+  return 'green';
+}
+
+function weekStatus(offset) {
+  const load = weekLoad(offset);
+  if (load >= 29) return 'red';
+  if (load >= 19) return 'amber';
+  return 'green';
+}
+
+// ── Warnings ──
+function adjacentDate(d, offsetDays) {
+  return localMidnight(d.getFullYear(), d.getMonth(), d.getDate() + offsetDays);
+}
+
+function computeWarnings(days) {
+  const warns = [];
+  // Extend the check window: include the day before Monday and the day after Sunday
+  // so cross-week boundaries are never invisible.
+  const checkDays = [adjacentDate(days[0], -1), ...days, adjacentDate(days[6], 1)];
+
+  checkDays.forEach((d, i) => {
+    const iso = toISO(d);
+    const ss  = sessionsOnDate(iso);
+    const hasMatch = ss.some(s => s.type === 'match');
+
+    // Heavy gym same day as match
+    if (hasMatch && ss.some(s => s.type === 'gym' && s.effort >= 4)) {
+      warns.push({ level:'red', msg:`Heavy gym + match on ${d.toLocaleDateString('en-IE',{weekday:'long', day:'numeric', month:'short'})} — avoid combining effort ≥ 4 with match day.` });
+    }
+
+    // Gym (effort ≥ 3) the day before a match — next day lookup crosses any boundary
+    if (i < checkDays.length - 1) {
+      const nextIso = toISO(checkDays[i+1]);
+      const nextMatch = sessionsOnDate(nextIso).some(s => s.type === 'match');
+      if (nextMatch && ss.some(s => s.type === 'gym' && s.effort >= 3)) {
+        warns.push({ level:'amber', msg:`Gym on ${d.toLocaleDateString('en-IE',{weekday:'long', day:'numeric', month:'short'})} — match the next day. Consider keeping effort ≤ 2.` });
+      }
+    }
+
+    // Match day followed by hard gym the next day (effort ≥ 3)
+    if (i < checkDays.length - 1) {
+      const nextD   = checkDays[i+1];
+      const nextIso = toISO(nextD);
+      const nextSs  = sessionsOnDate(nextIso);
+      if (hasMatch && nextSs.some(s => s.type === 'gym' && s.effort >= 3)) {
+        warns.push({ level:'amber', msg:`Match on ${d.toLocaleDateString('en-IE',{weekday:'long', day:'numeric', month:'short'})} — gym logged the next day. Consider a recovery session instead.` });
+      }
+    }
+
+    // Back-to-back high-load days
+    if (i < checkDays.length - 1) {
+      const nextIso = toISO(checkDays[i+1]);
+      if (dailyLoad(iso) >= 8 && dailyLoad(nextIso) >= 8) {
+        warns.push({ level:'amber', msg:`High load on ${d.toLocaleDateString('en-IE',{weekday:'long', day:'numeric', month:'short'})} and ${checkDays[i+1].toLocaleDateString('en-IE',{weekday:'long', day:'numeric', month:'short'})} back-to-back. Add a recovery day.` });
+      }
+    }
+  });
+
+  // De-duplicate identical messages (boundary days can appear in adjacent week views)
+  return warns.filter((w, i, arr) => arr.findIndex(x => x.msg === w.msg) === i);
+}
+
+// ── Render ──
+function render() {
+  const days   = getWeekDays(weekOffset);
+  const today  = toISO(new Date());
+  const monStr = days[0].toLocaleDateString('en-IE',{day:'numeric',month:'short'});
+  const sunStr = days[6].toLocaleDateString('en-IE',{day:'numeric',month:'short',year:'numeric'});
+  document.getElementById('week-range-label').textContent = `${monStr} – ${sunStr}`;
+
+  // Week badge
+  const wLoad   = weekLoad(weekOffset);
+  const wStatus = weekStatus(weekOffset);
+  const badge   = document.getElementById('week-badge');
+  badge.textContent = `WEEK · ${wLoad}`;
+  badge.className   = `week-badge ${wStatus}`;
+
+  // Calendar
+  const cal = document.getElementById('calendar');
+  const DAY_NAMES = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  cal.innerHTML = days.map((d, i) => {
+    const iso = toISO(d);
+    const ss  = sessionsOnDate(iso);
+    const st  = dailyStatus(iso);
+    const isToday = iso === today;
+    const pills = ss.slice(0,3).map(s =>
+      `<div class="session-pill ${s.type}">${s.type === 'training' ? 'training' : TYPE_LABELS[s.type]}</div>`
+    ).join('');
+    return `
+      <div class="day-cell${isToday ? ' today' : ''}" onclick="jumpToDate('${iso}')">
+        <div class="day-name">${DAY_NAMES[i]}</div>
+        <div class="day-num">${d.getDate()}</div>
+        <div class="day-sessions">${pills}</div>
+        <div class="day-dot ${st}"></div>
+      </div>`;
+  }).join('');
+
+  // Warnings
+  const warningEl = document.getElementById('warnings');
+  const warns = computeWarnings(days);
+  warningEl.innerHTML = warns.map(w =>
+    `<div class="warning-banner ${w.level}"><span class="icon">${w.level==='red'?'✕':'!'}</span><span>${w.msg}</span></div>`
+  ).join('');
+
+  // Session list
+  const listEl = document.getElementById('session-list');
+  const weekSessions = days.flatMap(d => {
+    const iso = toISO(d);
+    return sessionsOnDate(iso).map(s => ({ ...s, dateObj: d }));
+  });
+  if (!weekSessions.length) {
+    listEl.innerHTML = `<div style="font-family:var(--font-mono);font-size:12px;color:var(--hint);padding:8px 0">No sessions logged this week.</div>`;
+  } else {
+    listEl.innerHTML = weekSessions.map(s => `
+      <div class="session-item">
+        <div class="session-item-type ${s.type}"
+          style="background:var(--${s.type}-bg);color:var(--${s.type});border:1px solid rgba(0,0,0,0.1)"
+        >${TYPE_LABELS[s.type]}</div>
+        <div class="session-item-effort">RPE ${s.type==='match'?5:s.effort}</div>
+        <div class="session-item-note">${s.date} ${s.note ? '· '+s.note : ''}</div>
+        <button class="session-item-edit" onclick="editSession('${s.id}')" title="Edit">edit</button>
+        <button class="session-item-del" onclick="deleteSession('${s.id}')" title="Remove">×</button>
+      </div>
+    `).join('');
+  }
+}
+
+// ── Interactions ──
+function selectType(btn) {
+  document.querySelectorAll('.type-pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  selectedType = btn.dataset.type;
+}
+
+function updateEffort(v) {
+  document.getElementById('effort-val').textContent = v;
+  document.getElementById('effort-desc').textContent = EFFORT_DESCS[parseInt(v)];
+}
+
+function jumpToDate(iso) {
+  document.getElementById('log-date').value = iso;
+}
+
+function logSession() {
+  const date   = document.getElementById('log-date').value;
+  const effort = parseInt(document.getElementById('log-effort').value);
+  const note   = document.getElementById('log-note').value.trim();
+
+  if (!date)        { showToast('Pick a date first'); return; }
+  if (!selectedType){ showToast('Select a session type'); return; }
+
+  if (editingId) {
+    const idx = sessions.findIndex(s => s.id === editingId);
+    if (idx !== -1) {
+      sessions[idx] = { ...sessions[idx], date, type: selectedType, effort, note };
+    }
+    save();
+    cancelEdit();
+    showToast('Session updated ✓');
+  } else {
+    const session = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+      date, type: selectedType, effort, note
+    };
+    sessions.push(session);
+    save();
+    resetForm();
+    showToast('Session logged ✓');
+  }
+  render();
+}
+
+function editSession(id) {
+  const s = sessions.find(s => s.id === id);
+  if (!s) return;
+  editingId = id;
+  document.getElementById('log-date').value = s.date;
+  document.getElementById('log-effort').value = s.effort;
+  updateEffort(s.effort);
+  document.getElementById('log-note').value = s.note || '';
+  document.querySelectorAll('.type-pill').forEach(p => p.classList.remove('active'));
+  const pill = document.querySelector(`.type-pill[data-type="${s.type}"]`);
+  if (pill) { pill.classList.add('active'); selectedType = s.type; }
+  const card = document.querySelector('.log-card');
+  card.classList.add('editing');
+  document.getElementById('log-title').textContent = 'Edit session';
+  document.getElementById('log-btn').textContent = 'Save changes';
+  document.getElementById('log-btn').classList.add('saving');
+  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function cancelEdit() {
+  editingId = null;
+  resetForm();
+  const card = document.querySelector('.log-card');
+  card.classList.remove('editing');
+  document.getElementById('log-title').textContent = 'Log a session';
+  document.getElementById('log-btn').textContent = 'Log session';
+  document.getElementById('log-btn').classList.remove('saving');
+}
+
+function resetForm() {
+  document.getElementById('log-note').value = '';
+  document.querySelectorAll('.type-pill').forEach(p => p.classList.remove('active'));
+  selectedType = null;
+  document.getElementById('log-effort').value = 3;
+  updateEffort(3);
+}
+
+function deleteSession(id) {
+  sessions = sessions.filter(s => s.id !== id);
+  save();
+  render();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// Week nav
+document.getElementById('prev-week').onclick = () => { weekOffset--; render(); };
+document.getElementById('next-week').onclick = () => { weekOffset++; render(); };
+
+// Init date to today
+const today = new Date();
+document.getElementById('log-date').value = toISO(today);
+
+render();
+</script>
+</body>
+</html>
